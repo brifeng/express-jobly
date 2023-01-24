@@ -31,7 +31,7 @@ describe("create", function () {
     expect(company).toEqual(newCompany);
 
     const result = await db.query(
-          `SELECT handle, name, description, num_employees, logo_url
+      `SELECT handle, name, description, num_employees, logo_url
            FROM companies
            WHERE handle = 'new'`);
     expect(result.rows).toEqual([
@@ -129,7 +129,7 @@ describe("update", function () {
     });
 
     const result = await db.query(
-          `SELECT handle, name, description, num_employees, logo_url
+      `SELECT handle, name, description, num_employees, logo_url
            FROM companies
            WHERE handle = 'c1'`);
     expect(result.rows).toEqual([{
@@ -156,7 +156,7 @@ describe("update", function () {
     });
 
     const result = await db.query(
-          `SELECT handle, name, description, num_employees, logo_url
+      `SELECT handle, name, description, num_employees, logo_url
            FROM companies
            WHERE handle = 'c1'`);
     expect(result.rows).toEqual([{
@@ -193,7 +193,7 @@ describe("remove", function () {
   test("works", async function () {
     await Company.remove("c1");
     const res = await db.query(
-        "SELECT handle FROM companies WHERE handle='c1'");
+      "SELECT handle FROM companies WHERE handle='c1'");
     expect(res.rows.length).toEqual(0);
   });
 
@@ -206,3 +206,90 @@ describe("remove", function () {
     }
   });
 });
+
+
+/*************************************** search */
+
+describe("search", function () {
+  test("works: by name", async function () {
+    let companies = await Company.search({ name: "1" });
+    expect(companies).toEqual([
+      {
+        handle: "c1",
+        name: "C1",
+        description: "Desc1",
+        numEmployees: 1,
+        logoUrl: "http://c1.img",
+      },
+    ]);
+  });
+
+  test("works: by min employees", async function () {
+    let companies = await Company.search({ minEmployees: 2 });
+    expect(companies).toEqual([
+      {
+        handle: "c2",
+        name: "C2",
+        description: "Desc2",
+        numEmployees: 2,
+        logoUrl: "http://c2.img",
+      },
+      {
+        handle: "c3",
+        name: "C3",
+        description: "Desc3",
+        numEmployees: 3,
+        logoUrl: "http://c3.img",
+      },
+    ]);
+  });
+
+  test("works: by max employees", async function () {
+    let companies = await Company.search({ maxEmployees: 2 });
+    expect(companies).toEqual([
+      {
+        handle: "c1",
+        name: "C1",
+        description: "Desc1",
+        numEmployees: 1,
+        logoUrl: "http://c1.img",
+      },
+      {
+        handle: "c2",
+        name: "C2",
+        description: "Desc2",
+        numEmployees: 2,
+        logoUrl: "http://c2.img",
+      },
+    ]);
+  });
+
+  test("works: by min-max employees", async function () {
+    let companies = await Company.search(
+      { minEmployees: 1, maxEmployees: 1 });
+    expect(companies).toEqual([
+      {
+        handle: "c1",
+        name: "C1",
+        description: "Desc1",
+        numEmployees: 1,
+        logoUrl: "http://c1.img",
+      },
+    ]);
+  });
+
+  test("works: empty list on nothing found", async function () {
+    let companies = await Company.search({ name: "nope" });
+    expect(companies).toEqual([]);
+  });
+
+  test("bad request if invalid min > max", async function () {
+    try {
+      await Company.search({ minEmployees: 10, maxEmployees: 1 });
+      fail();
+    } catch (err) {
+      expect(err instanceof BadRequestError).toBeTruthy();
+    }
+  });
+
+})
